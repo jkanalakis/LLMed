@@ -25,7 +25,7 @@ public class ModelTrainer {
 
     private TextCorpus corpus; // Stores reference to the TextCorpus data source
     private NeuralNetwork network; // Stores reference to the NeuralNetwork to train
-    private int batchSize; // Batch size hyperparameter
+    private int batchSize = 8; // Batch size hyperparameter
     private Random rng; // Random number generator, used for sampling batches
     private TextGenerator textGenerator; // Used to encode text to vector representations
 
@@ -36,34 +36,74 @@ public class ModelTrainer {
         double[][][] batch = new double[batchSize][2][vocabSize]; // 3D array to hold pairs of input and target
 
         for (int i = 0; i < batchSize; i++) {
-            int index = rng.nextInt(corpus.getTextSize());
-            String text = corpus.getTextSample(index);
-            batch[i][0] = textGenerator.encodeTextAsVector(text); // First element of the pair is input
+            int index = rng.nextInt(corpus.getTextSize() - 1); // Ensure there's a next word
 
-            String nextWord = text.split(" ")[1];
-            batch[i][1] = textGenerator.encodeTextAsVector(nextWord); // Second element of the pair is target
+            String[] words = corpus.getTextSample(index).split(" ");
+            if (words.length >= 2) {
+                String currentWord = words[0]; // Current word
+                String nextWord = words[1]; // Next word
+
+                batch[i][0] = textGenerator.encodeTextAsVector(currentWord); // Encode current word as input
+                batch[i][1] = textGenerator.encodeTextAsVector(nextWord); // Encode next word as target
+
+                // System.out.println("Input: " + currentWord + ", Target: " + nextWord);
+            } else {
+                // Handle edge case where there's only one word or empty text
+                i--; // Redo this iteration with a different random index
+            }
         }
 
         return batch;
     }
 
+    // Calculate the mean error of the predictions for each batch
+    private double computeMeanError(double[] errors) {
+        double sum = 0;
+        for (double error : errors) {
+            sum += Math.abs(error); // Using absolute error; you could also square the errors for Mean Squared Error
+        }
+        return sum / errors.length;
+    }
+
     // Initializes trainer with corpus and network references
-    public ModelTrainer(TextCorpus corpus, NeuralNetwork network) {
+    public ModelTrainer(TextCorpus corpus, NeuralNetwork network, TextGenerator textGenerator) {
 
         this.corpus = corpus;
         this.network = network;
+        this.rng = new Random();
+        this.textGenerator = textGenerator;
     }
 
     // Main training loop - gets batches, trains network
     public void trainModel(int epochs) {
 
-        for (int i = 0; i < epochs; i++) {
-            double[][][] batch = getNextBatch();
-            for (int j = 0; j < batchSize; j++) {
-                double[] inputExample = batch[0][j]; // j-th example in input
-                double[] targetExample = batch[1][j]; // j-th example in target
-                network.train(inputExample, targetExample);
+        for (int epoch = 0; epoch < epochs; epoch++) {
+
+            double totalError = 0;
+
+            for (int batch = 0; batch < batchSize; batch++) {
+
+                double[][][] batchData = getNextBatch();
+                double batchError = 0;
+
+                for (int j = 0; j < batchSize; j++) {
+
+                    double[] input = batchData[j][0];
+                    double[] target = batchData[j][1];
+                    network.train(input, target);
+                    double[] output = network.predict(input);
+                    double[] error = network.calculateError(output, target);
+                    batchError += computeMeanError(error); // Implement computeMeanError to calculate mean error
+                }
+
+                batchError /= batchSize;
+                totalError += batchError;
+                System.out.println("Epoch " + (epoch + 1) + ", Batch " + (batch + 1) +
+                        ", Average Error: " + batchError);
             }
+
+            double averageEpochError = totalError / batchSize;
+            System.out.println("End of Epoch " + (epoch + 1) + ", Average Error: " + averageEpochError);
         }
     }
 

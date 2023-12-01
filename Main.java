@@ -16,6 +16,8 @@
 // WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import java.util.Scanner;
+
 public class Main {
 
     public static void main(String[] args) {
@@ -26,38 +28,59 @@ public class Main {
 
         // Create text corpus
         TextCorpus corpus = new TextCorpus();
-        System.out.println("Load text");
-        corpus.loadText("data.txt");
+        System.out.println("Load corpus text");
+        corpus.loadText("A-Tale-of-Two-Cities-by-Charles-Dickens.txt");
 
         // Specify network configuration
-        System.out.println("Create layers");
-        int[] layers = { 200, 100, corpus.getVocabSize() };
+        System.out.println("Create layers, vocabulary size is: " + corpus.getVocabSize());
+        int[] layers = { corpus.getVocabSize(), 500, 250, corpus.getVocabSize() };
 
         // Construct network
         System.out.println("Create NeuralNetwork");
+        int embeddingSize = 250;
         NeuralNetwork network = new NeuralNetwork(layers);
+        network.initializeEmbeddingWeights(corpus.getVocabSize(), embeddingSize);
+
+        // Create text generator
+        System.out.println("Create TextGenerator");
+        TextGenerator generator = new TextGenerator(network, corpus, embeddingSize);
 
         // Initialize trainer
         System.out.println("Create ModelTrainer");
-        ModelTrainer trainer = new ModelTrainer(corpus, network);
+        ModelTrainer trainer = new ModelTrainer(corpus, network, generator);
 
         // Train
         System.out.println("Train model");
         trainer.trainModel(10);
 
-        // Create text generator
-        System.out.println("Create TextGenerator");
-        TextGenerator generator = new TextGenerator(network, corpus);
+        // Test completion
+        System.out.println("\n\nComplete text: In his expostulation he dropped his cleaner hand...");
+        String completed = generator.completeText("In his expostulation he dropped his cleaner hand", 65);
+        System.out.println(completed);
 
         // Test generation
-        System.out.println("Generate some text");
-        String generated = generator.generateText("The dog", 10);
+        System.out.println("\n\nGenerate some text: This dialogue had been held in so very low a whisper...");
+        String generated = generator.generateText("This dialogue had been held in so very low a whisper", 24);
         System.out.println(generated);
 
-        // Test completion
-        System.out.println("Complete some text");
-        String completed = generator.completeText("The quick brown ");
-        System.out.println(completed);
+        // Prompt user to enter text for completion
+        Scanner scanner = new Scanner(System.in);
+
+        while (true) {
+
+            System.out.print("\n\nEnter text to complete (or quit): ");
+            String input = scanner.nextLine();
+
+            if (input.equalsIgnoreCase("quit")) {
+                break;
+            }
+
+            String response = generator.completeText(input, 25);
+
+            System.out.println("\n" + response);
+        }
+
+        scanner.close();
     }
 
 }

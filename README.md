@@ -1,37 +1,55 @@
 # LLMed | Large Language Model for Understanding
 
-The purpose of this project is to promote understanding of LLMs and core components. This project implements a very basic character-level language model in Java using a feedforward neural network architecture. The model is trained to predict the next character in sequences of text. 
+The purpose of this project is to promote understanding of LLMs and core components. This project implements a very basic character-level language model in Java using a feedforward neural network architecture. The model is trained to predict the next character in sequences of text.
 
 ## Overview
 
 The language model comprises a neural network with dense, fully-connected layers. It is trained via backpropagation on a text data file samples in order to learn statistical patterns in sequences. The trained model can then be used to generate or complete texts, by repeatedly sampling predictions for the next character.
 
+## Tuning the LLM
+
+### Main.java
+
+- Epochs: 10, Overfitting can occur if the model is trained for too long. Conversely, underfitting can happen if not trained enough.
+- Neural Network Hidden Layers: 100 and 50, More complex texts or larger vocabularies might benefit from larger or more numerous hidden layers, but this also increases the risk of overfitting and the computational cost.
+- Embedding Size: 50, Dimensionality of feature vectors representing words.
+
+- Learning Rate:0.01, Learning rate hyperparameter for gradient updates
+
+- Batch Size:8, Number of training samples processed together
+
+## Notes
+
+This project highlights a few important factors about LLMs.
+
+- Preprocessing data is pretty important. The included public domain book by Charles Dickens includes a lot of special characters and symbols that caused issues with creating the vocabulary list of words.
+
 The system consists of the following key classes:
 
 ## TextCorpus
 
-Stores textual training data along with vocabulary metadata. 
+Stores textual training data along with vocabulary metadata.
 
 - Load text data
-- Provide access to text samples  
-- Preprocess and normalize text  
+- Provide access to text samples
+- Preprocess and normalize text
 - Track vocabulary and statistics
 
 ## NeuralNetwork
 
 Defines network architecture and handles training.
 
-- Initialize network topology 
+- Initialize network topology
 - Forward and backward passes
-- Updating layer weights  
-- Making next character inferences  
+- Updating layer weights
+- Making next character inferences
 
-## DenseLayer 
+## DenseLayer
 
 Defines a fully-connected neural network layer.
-  
+
 - Making forward pass predictions
-- Calculating parameter gradients in backpropagation  
+- Calculating parameter gradients in backpropagation
 - Storing weights, biases, outputs
 - Applying activation functions
 
@@ -39,9 +57,9 @@ Defines a fully-connected neural network layer.
 
 Handles training workflow.
 
-- Retrieve data batches  
+- Retrieve data batches
 - Feedforward/backpropagate batches through networks
-- Track training metrics like loss  
+- Track training metrics like loss
 
 ## TextGenerator
 

@@ -30,11 +30,13 @@ public class DenseLayer {
 
     // Computes standard sigmoid activation function
     private double sigmoid(double x) {
+
         return 1 / (1 + Math.exp(-x));
     }
 
-    // Computes derivative of sigmoid for backprop
+    // Computes derivative of sigmoid for backPropagation
     private double derivativeSigmoid(double x) {
+
         double sigmoid = sigmoid(x);
         return sigmoid * (1 - sigmoid);
     }
@@ -74,7 +76,7 @@ public class DenseLayer {
     }
 
     // Forward propagation to compute layer outputs
-    public double[] forwardProp(double[] inputs) {
+    public double[] forwardPropagation(double[] inputs) {
 
         this.inputs = inputs;
         this.outputs = new double[numNodes];
@@ -87,11 +89,12 @@ public class DenseLayer {
             outputs[i] += biases[i];
             outputs[i] = sigmoid(outputs[i]);
         }
+
         return outputs;
     }
 
     // Backward propagation to compute parameter gradients
-    public void backProp(double[] expectedOutputs) {
+    public void backwardPropagation(double[] expectedOutputs) {
 
         double[] errors = new double[numNodes];
         double[][] weightGradients = new double[numNodes][inputs.length];

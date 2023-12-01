@@ -25,14 +25,17 @@ import java.util.List;
 public class NeuralNetwork {
 
     private List<DenseLayer> layers; // Stores the sequence of DenseLayer objects that defines the network topology
-    private double learningRate; // Learning rate hyperparameter for gradient updates
+    private double learningRate = 0.01; // Learning rate hyperparameter for gradient updates
+    private double[][] embeddingWeights; // Dimensionality of feature vectors representing words
 
     // Runs a forward pass, chaining layer propagations
-    private double[] forwardProp(double[] input) {
+    private double[] forwardPropagation(double[] input) {
 
         double[] output = input;
+
         for (DenseLayer layer : layers) {
-            output = layer.forwardProp(output);
+            output = layer.forwardPropagation(output);
+
         }
         return output;
 
@@ -42,21 +45,48 @@ public class NeuralNetwork {
     public NeuralNetwork(int[] shape) {
 
         layers = new ArrayList<>(shape.length - 1);
+
         for (int i = 1; i < shape.length; i++) {
+
             int inputSize = shape[i - 1]; // Set input size to the number of nodes in the previous layer
-            layers.add(new DenseLayer(shape[i], inputSize, 0.01)); // shape[i] is the number of nodes in the current
-                                                                   // layer
+            layers.add(new DenseLayer(shape[i], inputSize, learningRate)); // shape[i] is the number of nodes in the
+                                                                           // current layer
         }
+    }
+
+    // Initialize embeddingWeights
+    public void initializeEmbeddingWeights(int vocabSize, int embeddingSize) {
+
+        this.embeddingWeights = new double[vocabSize][embeddingSize];
+
+        for (int i = 0; i < vocabSize; i++) {
+            for (int j = 0; j < embeddingSize; j++) {
+                this.embeddingWeights[i][j] = Math.random(); // Or some other initialization
+            }
+        }
+    }
+
+    public double[] getWordEmbedding(int wordIndex) {
+
+        if (embeddingWeights == null) {
+            throw new IllegalStateException("Embedding weights have not been initialized.");
+        }
+        if (wordIndex < 0 || wordIndex >= embeddingWeights.length) {
+            throw new IllegalArgumentException("Invalid word index");
+        }
+
+        return embeddingWeights[wordIndex];
     }
 
     // Compares output and target arrays to compute error signal
     public double[] calculateError(double[] output, double[] target) {
-        System.out.println("   NeuralNetwork.calculateError()");
 
         if (output.length != target.length) {
             throw new IllegalArgumentException("Output and target arrays must have the same length");
         }
+
         double[] errors = new double[output.length];
+
         for (int i = 0; i < output.length; i++) {
             errors[i] = target[i] - output[i];
         }
@@ -65,17 +95,16 @@ public class NeuralNetwork {
 
     // Performs a forward pass, backward pass, and layer update loop
     public void train(double[] input, double[] target) {
-        System.out.println("   NeuralNetwork.train()");
 
         // Forward pass
-        double[] output = forwardProp(input);
+        double[] output = forwardPropagation(input);
 
         // Backward pass
         double[] error = calculateError(output, target);
 
         for (int i = layers.size() - 1; i >= 0; --i) {
             // Update each layer using backpropagation
-            layers.get(i).backProp(error);
+            layers.get(i).backwardPropagation(error);
 
             // Calculate the error for the previous layer, if necessary
             if (i > 0) {
@@ -86,21 +115,8 @@ public class NeuralNetwork {
 
     // Runs a forward pass to generate output for given input
     public double[] predict(double[] input) {
-        System.out.println("   NeuralNetwork.predict()");
 
-        return forwardProp(input);
-    }
-
-    // Sets the learning rate hyperparameter value
-    public void setLearningRate(double rate) {
-
-        this.learningRate = rate;
-    }
-
-    // Retrieves current set learning rate value
-    public double getLearningRate() {
-
-        return this.learningRate;
+        return forwardPropagation(input);
     }
 
 }

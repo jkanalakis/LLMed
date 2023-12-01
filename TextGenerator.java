@@ -16,6 +16,10 @@
 // WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 // Responsible for integrating with the trained neural network to encode input text into vector 
@@ -26,6 +30,8 @@ public class TextGenerator {
     private NeuralNetwork network; // Reference to the trained neural network model
     private TextCorpus corpus; // Reference to the text corpus
     private Random rng; // Random number generator
+    private int embeddingSize; // Size of the word embeddings
+    private double temperature = 0.7; //
 
     // Helper to locate maximum value index in a vector
     private int findMaxIndex(double[] vector) {
@@ -34,6 +40,7 @@ public class TextGenerator {
         int maxIndex = -1;
 
         for (int i = 0; i < vector.length; i++) {
+
             if (vector[i] > maxValue) {
                 maxValue = vector[i];
                 maxIndex = i;
@@ -44,65 +51,96 @@ public class TextGenerator {
     }
 
     // Samples next word index based on prediction probabilities
-    private int sampleFromDistribution(double[] distribution) {
+    private int sampleTopKFromDistribution(double[] distribution, int k) {
 
-        double sum = 0;
-        double randomValue = rng.nextDouble();
+        // Create a list of word indices and their corresponding probabilities
+        List<Map.Entry<Integer, Double>> candidates = new ArrayList<>();
 
         for (int i = 0; i < distribution.length; i++) {
-            sum += distribution[i];
-            if (randomValue < sum) {
-                return i;
+            candidates.add(new AbstractMap.SimpleEntry<>(i, distribution[i]));
+        }
+
+        // Sort and retain top k candidates
+        candidates.sort((e1, e2) -> Double.compare(e2.getValue(), e1.getValue()));
+        candidates = candidates.subList(0, Math.min(k, candidates.size()));
+
+        // Normalize probabilities of top k candidates
+        double sum = candidates.stream().mapToDouble(Map.Entry::getValue).sum();
+
+        for (Map.Entry<Integer, Double> entry : candidates) {
+            entry.setValue(entry.getValue() / sum);
+        }
+
+        // Sample from top k candidates
+        double randomValue = rng.nextDouble();
+        double cumulativeProbability = 0.0;
+
+        for (Map.Entry<Integer, Double> entry : candidates) {
+            cumulativeProbability += entry.getValue();
+            if (randomValue < cumulativeProbability) {
+                return entry.getKey();
             }
         }
 
-        // Should not reach here
-        return -1;
+        // Fallback (should not happen, but just in case)
+        return candidates.get(rng.nextInt(candidates.size())).getKey();
+    }
 
+    private double[] softmaxWithTemperature(double[] logits) {
+
+        double[] softened = new double[logits.length];
+        double sum = 0;
+
+        for (int i = 0; i < logits.length; i++) {
+            softened[i] = Math.exp(logits[i] / temperature);
+            sum += softened[i];
+        }
+
+        for (int i = 0; i < softened.length; i++) {
+            softened[i] /= sum;
+        }
+
+        return softened;
     }
 
     // Initializes key references and rng
-    public TextGenerator(NeuralNetwork network, TextCorpus corpus) {
+    public TextGenerator(NeuralNetwork network, TextCorpus corpus, int embeddingSize) {
 
         this.network = network;
         this.corpus = corpus;
+        this.embeddingSize = embeddingSize;
         this.rng = new Random(); // For sampling
+    }
+
+    // Encodes text into an embedding vector
+    public double[] encodeText(String text) {
+
+        String[] words = text.split(" ");
+        double[] embedding = new double[embeddingSize * words.length];
+
+        for (int i = 0; i < words.length; i++) {
+            int index = corpus.getWordIndex(words[i]);
+            if (index != -1) {
+                double[] wordEmbedding = network.getWordEmbedding(index);
+                System.arraycopy(wordEmbedding, 0, embedding, i * embeddingSize, embeddingSize);
+            }
+        }
+
+        return embedding;
     }
 
     // Encodes text into one-hot vector
     public double[] encodeTextAsVector(String text) {
 
         int vocabSize = corpus.getVocabSize(); // Get the size of the vocabulary
-        double[] vector = new double[vocabSize]; // Initialize a vector of size vocabSize with all 0s
+        double[] vector = new double[vocabSize];
 
-        int index = corpus.getWordIndex(text); // Method to get the index of the word in the vocabulary
+        int index = corpus.getWordIndex(text); // Get the index of the word in the vocabulary
         if (index != -1) {
             vector[index] = 1.0; // Set the element at the index of the word to 1
         }
 
         return vector;
-    }
-
-    // Encodes text into bag-of-words vector
-    public double[] encodeText(String text) {
-
-        double[] encoded = new double[corpus.getVocabSize()];
-
-        String[] words = text.split(" ");
-
-        for (String word : words) {
-
-            int index = corpus.getVocabIndex(word);
-
-            // Ignore unknown words
-            if (index != -1) {
-                encoded[index] += 1;
-            }
-
-        }
-
-        return encoded;
-
     }
 
     // Decodes output vector into words
@@ -126,54 +164,32 @@ public class TextGenerator {
     // Gets next word predictions from network
     public double[] predictNext(double[] encodedText) {
 
-        // Add batch dimension
-        double[][] input = new double[1][encodedText.length];
-        input[0] = encodedText;
-
-        // Get output prediction
-        double[][] output = new double[input.length][];
-        for (int i = 0; i < input.length; i++) {
-            output[i] = network.predict(input[i]); // Call predict on each 1D sub-array
-        }
-
-        // Remove batch dimension
-        return output[0];
-
+        double[] output = network.predict(encodedText);
+        return softmaxWithTemperature(output);
     }
 
     // Generates text token by token using network
     public String generateText(String initialText, int length) {
 
-        // Encode seed text
         double[] encoded = encodeText(initialText);
-
-        // Output string
         String generated = initialText;
 
-        // Generate text token-by-token
         for (int i = 0; i < length; i++) {
-
-            // Predict next token
             double[] output = predictNext(encoded);
+            // jk int sampleIndex = sampleFromDistribution(output);
 
-            // Sample from distribution
-            int sample = sampleFromDistribution(output);
+            int sampleIndex = sampleTopKFromDistribution(output, 10);
 
-            // Decode and append to output
-            String word = corpus.getVocabWord(sample);
+            String word = corpus.getVocabWord(sampleIndex);
             generated += " " + word;
-
-            // Update encoded vector
-            encoded = encodeText(word);
-
+            encoded = encodeText(word); // Update encoding with the new word
         }
 
         return generated;
-
     }
 
     // Predicts completion for partial text
-    public String completeText(String initialText) {
+    public String completeText(String initialText, int maxLength) {
 
         // Encode seed text
         double[] encoded = encodeText(initialText);
@@ -184,9 +200,18 @@ public class TextGenerator {
         // Decode predictions
         String completion = decodeVector(output);
 
-        // Return completed text
-        return initialText + " " + completion;
+        // Combine initial text with completion
+        String combinedText = initialText + " " + completion;
 
+        // Split the text into words and limit to 25 words
+        String[] words = combinedText.split("\\s+"); // Split on spaces
+        StringBuilder limitedText = new StringBuilder();
+        for (int i = 0; i < Math.min(words.length, maxLength); i++) {
+            limitedText.append(words[i]).append(" ");
+        }
+
+        // Return the truncated or limited text
+        return limitedText.toString().trim(); // Trim to remove the last space
     }
 
 }

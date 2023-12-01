@@ -19,6 +19,7 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.Normalizer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -32,7 +33,9 @@ public class TextCorpus {
 
     // Cleans/normalizes a text sample
     private String preprocessText(String text) {
-        System.out.println("   TextCorpus.preprocessText()");
+
+        // Remove Unicode BOM character if present
+        text = text.replace("\ufeff", "");
 
         // Normalize whitespace
         text = text.replaceAll("\\s+", " ");
@@ -40,14 +43,15 @@ public class TextCorpus {
         // Convert to lower case
         text = text.toLowerCase();
 
-        // Remove punctuation
-        text = text.replaceAll("[,:;.?!-()]", "");
+        // Normalize accented characters
+        text = Normalizer.normalize(text, Normalizer.Form.NFD);
+        text = text.replaceAll("[\\p{InCombiningDiacriticalMarks}]", "");
 
-        // Expand common contractions
-        text = text.replaceAll("won't", "will not");
-        text = text.replaceAll("can't", "cannot");
+        // Replace hyphens with space
+        text = text.replaceAll("-", " ");
 
-        // Other contractions
+        // Remove punctuation and non-letter characters
+        text = text.replaceAll("[^a-z ]", "");
 
         return text;
     }
@@ -61,7 +65,7 @@ public class TextCorpus {
 
     // Processes text and tracks unique words
     public void updateVocabulary(String text) {
-        System.out.println("   TextCorpus.updateVocabulary(" + text + ")");
+        // System.out.println(" TextCorpus.updateVocabulary(" + text + ")");
 
         // Split the text into words
         String[] words = text.split("\\s+"); // Split by whitespace
@@ -77,19 +81,18 @@ public class TextCorpus {
     // Loads text data from files into storage
     public void loadText(String file) {
 
-        System.out.println("   TextCorpus.loadText()");
-
         try {
+
             BufferedReader reader = new BufferedReader(new FileReader(file));
             String line;
             while ((line = reader.readLine()) != null) {
 
                 // Clean text
-                String cleaned = preprocessText(line);
+                String cleanedText = preprocessText(line);
 
                 // Update data and vocab
-                textData.add(cleaned);
-                updateVocabulary(cleaned);
+                textData.add(cleanedText);
+                updateVocabulary(cleanedText);
 
             }
             reader.close();
