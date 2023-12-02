@@ -25,7 +25,6 @@ import java.util.List;
 public class NeuralNetwork {
 
     private List<DenseLayer> layers; // Stores the sequence of DenseLayer objects that defines the network topology
-    private double learningRate = 0.01; // Learning rate hyperparameter for gradient updates
     private double[][] embeddingWeights; // Dimensionality of feature vectors representing words
 
     // Runs a forward pass, chaining layer propagations
@@ -37,12 +36,13 @@ public class NeuralNetwork {
             output = layer.forwardPropagation(output);
 
         }
+
         return output;
 
     }
 
     // Instantiates layers based on provided layer sizes
-    public NeuralNetwork(int[] shape) {
+    public NeuralNetwork(int[] shape, double learningRate) {
 
         layers = new ArrayList<>(shape.length - 1);
 

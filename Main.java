@@ -22,6 +22,16 @@ public class Main {
 
     public static void main(String[] args) {
 
+        int epochs = 20;
+        int embeddingSize = 150;
+        int neuralnetworkLayer1 = 0; // Sized to the vocabulary
+        int neuralnetworkLayer2 = 500;
+        int neuralnetworkLayer3 = 300;
+        int neuralnetworkLayer4 = 0; // Sized to the vocabulary
+        double learningRate = 0.005; // Learning rate for gradient updates
+        int batchSize = 16; // Number of training samples processed
+        double temperature = 0.75; // Randomness in the prediction process
+
         System.out.println("==========================================================");
         System.out.println("LLMed | Large Language Model for Educational Understanding");
         System.out.println("==========================================================");
@@ -30,31 +40,34 @@ public class Main {
         TextCorpus corpus = new TextCorpus();
         System.out.println("Load corpus text");
         corpus.loadText("A-Tale-of-Two-Cities-by-Charles-Dickens.txt");
+        System.out.println("Vocabulary size is: " + corpus.getVocabSize());
 
-        // Specify network configuration
-        System.out.println("Create layers, vocabulary size is: " + corpus.getVocabSize());
-        int[] layers = { corpus.getVocabSize(), 500, 250, corpus.getVocabSize() };
+        neuralnetworkLayer1 = corpus.getVocabSize();
+        neuralnetworkLayer4 = corpus.getVocabSize();
 
         // Construct network
         System.out.println("Create NeuralNetwork");
-        int embeddingSize = 250;
-        NeuralNetwork network = new NeuralNetwork(layers);
-        network.initializeEmbeddingWeights(corpus.getVocabSize(), embeddingSize);
+        int[] neuralLayers = { neuralnetworkLayer1, neuralnetworkLayer2, neuralnetworkLayer3, neuralnetworkLayer4 };
+        NeuralNetwork neuralNetwork = new NeuralNetwork(neuralLayers, learningRate);
+
+        // Initialize embeddings
+        System.out.println("Initialize embeddings");
+        neuralNetwork.initializeEmbeddingWeights(corpus.getVocabSize(), embeddingSize);
 
         // Create text generator
         System.out.println("Create TextGenerator");
-        TextGenerator generator = new TextGenerator(network, corpus, embeddingSize);
+        TextGenerator generator = new TextGenerator(neuralNetwork, corpus, embeddingSize, temperature);
 
         // Initialize trainer
         System.out.println("Create ModelTrainer");
-        ModelTrainer trainer = new ModelTrainer(corpus, network, generator);
+        ModelTrainer trainer = new ModelTrainer(corpus, neuralNetwork, generator, batchSize);
 
         // Train
         System.out.println("Train model");
-        trainer.trainModel(10);
+        trainer.trainModel(epochs);
 
         // Test completion
-        System.out.println("\n\nComplete text: In his expostulation he dropped his cleaner hand...");
+        System.out.println("\n\nComplete this text: In his expostulation he dropped his cleaner hand...");
         String completed = generator.completeText("In his expostulation he dropped his cleaner hand", 65);
         System.out.println(completed);
 

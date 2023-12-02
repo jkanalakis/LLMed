@@ -65,7 +65,6 @@ public class TextCorpus {
 
     // Processes text and tracks unique words
     public void updateVocabulary(String text) {
-        // System.out.println(" TextCorpus.updateVocabulary(" + text + ")");
 
         // Split the text into words
         String[] words = text.split("\\s+"); // Split by whitespace
@@ -108,12 +107,6 @@ public class TextCorpus {
     public int getVocabSize() {
 
         return vocabList.size();
-    }
-
-    // Looks up index for a given word
-    public int getVocabIndex(String word) {
-
-        return vocabList.indexOf(word);
     }
 
     // Retrieves word for given index

@@ -31,7 +31,7 @@ public class TextGenerator {
     private TextCorpus corpus; // Reference to the text corpus
     private Random rng; // Random number generator
     private int embeddingSize; // Size of the word embeddings
-    private double temperature = 0.7; //
+    private double temperature;
 
     // Helper to locate maximum value index in a vector
     private int findMaxIndex(double[] vector) {
@@ -104,11 +104,12 @@ public class TextGenerator {
     }
 
     // Initializes key references and rng
-    public TextGenerator(NeuralNetwork network, TextCorpus corpus, int embeddingSize) {
+    public TextGenerator(NeuralNetwork network, TextCorpus corpus, int embeddingSize, double temperature) {
 
         this.network = network;
         this.corpus = corpus;
         this.embeddingSize = embeddingSize;
+        this.temperature = temperature;
         this.rng = new Random(); // For sampling
     }
 
@@ -119,8 +120,11 @@ public class TextGenerator {
         double[] embedding = new double[embeddingSize * words.length];
 
         for (int i = 0; i < words.length; i++) {
+
             int index = corpus.getWordIndex(words[i]);
+
             if (index != -1) {
+
                 double[] wordEmbedding = network.getWordEmbedding(index);
                 System.arraycopy(wordEmbedding, 0, embedding, i * embeddingSize, embeddingSize);
             }
@@ -136,7 +140,9 @@ public class TextGenerator {
         double[] vector = new double[vocabSize];
 
         int index = corpus.getWordIndex(text); // Get the index of the word in the vocabulary
+
         if (index != -1) {
+
             vector[index] = 1.0; // Set the element at the index of the word to 1
         }
 
@@ -151,6 +157,7 @@ public class TextGenerator {
         int iterations = 0;
 
         while (maxIndex != -1 && iterations < vector.length) { // Avoid infinite loops
+
             String word = corpus.getVocabWord(maxIndex);
             decoded += " " + word;
             vector[maxIndex] = Double.NEGATIVE_INFINITY; // Mark as used and ensure it's the lowest value
@@ -175,8 +182,8 @@ public class TextGenerator {
         String generated = initialText;
 
         for (int i = 0; i < length; i++) {
+
             double[] output = predictNext(encoded);
-            // jk int sampleIndex = sampleFromDistribution(output);
 
             int sampleIndex = sampleTopKFromDistribution(output, 10);
 
@@ -206,7 +213,9 @@ public class TextGenerator {
         // Split the text into words and limit to 25 words
         String[] words = combinedText.split("\\s+"); // Split on spaces
         StringBuilder limitedText = new StringBuilder();
+
         for (int i = 0; i < Math.min(words.length, maxLength); i++) {
+
             limitedText.append(words[i]).append(" ");
         }
 

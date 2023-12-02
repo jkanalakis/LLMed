@@ -45,9 +45,14 @@ public class DenseLayer {
     private void initializeWeights() {
 
         for (int i = 0; i < numNodes; i++) {
+
             for (int j = 0; j < weights[i].length; j++) {
-                weights[i][j] = Math.random(); // Random initialization
+
+                // Random initialization to prevent each neuron in the network layer from
+                // learning the same features during training
+                weights[i][j] = Math.random();
             }
+
             biases[i] = Math.random();
         }
     }
@@ -56,9 +61,12 @@ public class DenseLayer {
     private void updateWeightsAndBiases(double[][] weightGradients, double[] biasGradients) {
 
         for (int i = 0; i < numNodes; i++) {
+
             for (int j = 0; j < inputs.length; j++) {
+
                 weights[i][j] += learningRate * weightGradients[i][j];
             }
+
             biases[i] += learningRate * biasGradients[i];
         }
     }
@@ -82,10 +90,14 @@ public class DenseLayer {
         this.outputs = new double[numNodes];
 
         for (int i = 0; i < numNodes; i++) {
+
             outputs[i] = 0;
+
             for (int j = 0; j < inputs.length; j++) {
+
                 outputs[i] += weights[i][j] * inputs[j];
             }
+
             outputs[i] += biases[i];
             outputs[i] = sigmoid(outputs[i]);
         }
@@ -101,11 +113,14 @@ public class DenseLayer {
         double[] biasGradients = new double[numNodes];
 
         for (int i = 0; i < numNodes; i++) {
+
             errors[i] = expectedOutputs[i] - outputs[i];
 
             for (int j = 0; j < inputs.length; j++) {
+
                 weightGradients[i][j] = errors[i] * derivativeSigmoid(outputs[i]) * inputs[j];
             }
+
             biasGradients[i] = errors[i] * derivativeSigmoid(outputs[i]);
         }
 
@@ -118,7 +133,9 @@ public class DenseLayer {
         double[] previousLayerError = new double[inputs.length];
 
         for (int i = 0; i < inputs.length; i++) {
+
             for (int j = 0; j < numNodes; j++) {
+
                 // Propagate error back to the previous layer
                 previousLayerError[i] += nextLayerError[j] * weights[j][i] * derivativeSigmoid(outputs[j]);
             }

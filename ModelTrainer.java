@@ -25,7 +25,7 @@ public class ModelTrainer {
 
     private TextCorpus corpus; // Stores reference to the TextCorpus data source
     private NeuralNetwork network; // Stores reference to the NeuralNetwork to train
-    private int batchSize = 8; // Batch size hyperparameter
+    private int batchSize; // Stores reference to the batch size
     private Random rng; // Random number generator, used for sampling batches
     private TextGenerator textGenerator; // Used to encode text to vector representations
 
@@ -36,10 +36,13 @@ public class ModelTrainer {
         double[][][] batch = new double[batchSize][2][vocabSize]; // 3D array to hold pairs of input and target
 
         for (int i = 0; i < batchSize; i++) {
+
             int index = rng.nextInt(corpus.getTextSize() - 1); // Ensure there's a next word
 
             String[] words = corpus.getTextSample(index).split(" ");
+
             if (words.length >= 2) {
+
                 String currentWord = words[0]; // Current word
                 String nextWord = words[1]; // Next word
 
@@ -48,6 +51,7 @@ public class ModelTrainer {
 
                 // System.out.println("Input: " + currentWord + ", Target: " + nextWord);
             } else {
+
                 // Handle edge case where there's only one word or empty text
                 i--; // Redo this iteration with a different random index
             }
@@ -58,20 +62,25 @@ public class ModelTrainer {
 
     // Calculate the mean error of the predictions for each batch
     private double computeMeanError(double[] errors) {
+
         double sum = 0;
+
         for (double error : errors) {
+
             sum += Math.abs(error); // Using absolute error; you could also square the errors for Mean Squared Error
         }
+
         return sum / errors.length;
     }
 
     // Initializes trainer with corpus and network references
-    public ModelTrainer(TextCorpus corpus, NeuralNetwork network, TextGenerator textGenerator) {
+    public ModelTrainer(TextCorpus corpus, NeuralNetwork network, TextGenerator textGenerator, int batchSize) {
 
         this.corpus = corpus;
         this.network = network;
         this.rng = new Random();
         this.textGenerator = textGenerator;
+        this.batchSize = batchSize;
     }
 
     // Main training loop - gets batches, trains network
