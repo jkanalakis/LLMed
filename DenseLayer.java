@@ -16,10 +16,14 @@
 // WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE 
 // SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import java.io.Serializable;
+
 // The DenseLayer defines a fully-connected neural network layer with input/output nodes, 
 // weight parameters, bias terms, and methods for the forward and backpropagation computational
 // logic during network operations
-public class DenseLayer {
+public class DenseLayer implements Serializable {
+
+    private static final long serialVersionUID = 1L; // Add a serialVersionUID
 
     private int numNodes; // Stores the number of nodes (neurons) in this dense layer
     private double[][] weights; // The weight parameters between inputs and output nodes

@@ -18,11 +18,14 @@
 
 import java.util.ArrayList;
 import java.util.List;
+import java.io.Serializable;
 
 // The NeuralNetwork class defines the overall architecture and training logic for the neural 
 // net, including initializing the layered topology, handling forward and backward passes, 
 // making predictions, and encapsulating the learning related hyperparameters
-public class NeuralNetwork {
+public class NeuralNetwork implements Serializable {
+
+    private static final long serialVersionUID = 1L; // Add a serialVersionUID
 
     private List<DenseLayer> layers; // Stores the sequence of DenseLayer objects that defines the network topology
     private double[][] embeddingWeights; // Dimensionality of feature vectors representing words

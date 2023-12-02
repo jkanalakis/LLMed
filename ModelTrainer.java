@@ -18,7 +18,7 @@
 
 import java.util.Random;
 
-// handles fetching batch data examples from the TextCorpus data source, forwarding them through
+// Handles fetching batch data examples from the TextCorpus data source, forwarding them through
 // the NeuralNetwork to train the model weights via backpropagation based on the loss, and 
 // tracking the model accuracy over training epochs
 public class ModelTrainer {
